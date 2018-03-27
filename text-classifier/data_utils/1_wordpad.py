@@ -27,19 +27,19 @@ def parse_args():
     return parser.parse_args()
 
 
-def tokenize(fname, args):
+def wordpad(fname, args):
     info('processing {}'.format(fname))
     # Replace any <eos> and <pad> appearing in the text with <unk>.
     lines = [re.sub(r'(({0})|({1}))'.format(args.eos, args.pad), args.unk,
                     line.strip()) for line in open(fname, 'r')]
     for line in tqdm(lines):
         cur = line.split()[:args.seqlen] + [args.eos]
-        cur += [args.pad] * (args.seqlen - len(cur))
+        cur += [args.pad] * (args.seqlen + 1 - len(cur))
         print(' '.join(cur))
 
 
 def main(args):
-    tokenize(os.path.expanduser(args.fname), args)
+    wordpad(os.path.expanduser(args.fname), args)
 
 
 if __name__ == '__main__':

@@ -6,7 +6,7 @@ import tensorflow as tf
 from highway import Highway
 
 
-class CharModel:
+class CharCNN:
     def __init__(self, cfg):
         self.cfg = cfg
         self.build = False
@@ -37,22 +37,25 @@ class CharModel:
         self.logits = None
         self.build = True
 
-    def _add_inference_graph(self, x):
+    def _add_inference_graph(self, x, training=False):
         self.x_embed = z = tf.nn.embedding_lookup(self.embedding, x)
-        z = self.dropout(z, training=self.cfg.training)
+        z = self.dropout(z, training=training)
         zs = [conv1d(z) for conv1d in self.conv1ds]
         zs = [tf.reduce_max(z, axis=1) for z in zs]  # max-over-time
         z = tf.concat(zs, axis=1)
         z = tf.expand_dims(z, axis=1)
         z, _ = tf.nn.dynamic_rnn(self.cells, z, dtype=tf.float32)
         z = tf.squeeze(z)
-        z = self.dropout(z, training=self.cfg.training)
+        z = self.dropout(z, training=training)
         self.logits = z = self.resize(z)
         return z
 
-    def predict(self, x):
+    def predict(self, x, training=False):
         if not self.build:
             self._build()
-        logits = self._add_inference_graph(x)
-        y = self.cfg.prob_fn(logits)
+        logits = self._add_inference_graph(x, training)
+        y = self.cfg.output(logits)
         return y
+
+    def __call__(self, x, training=False):
+        return self.predict(x, training)

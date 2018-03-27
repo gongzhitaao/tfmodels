@@ -19,9 +19,12 @@ def parse_args():
 
 
 def main(args):
-    mat = np.load(os.path.expanduser(args.fname))
-    for vec in mat:
-        sent = ''.join(chr(c) for c in sent)
+    fn = os.path.expanduser(args.fname)
+    info('loading {}'.format(fn))
+    mat = np.load(fn).astype(np.int32)
+    info('converting back to char')
+    for line in mat:
+        sent = ''.join(chr(c) for c in line)
         print(sent)
 
 

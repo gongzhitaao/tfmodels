@@ -21,8 +21,11 @@ def parse_args():
                         help='maximum word length')
     parser.add_argument('--ascii', dest='allascii', action='store_true',
                         help='replace nonascii characters with unk character')
-    parser.add_argument('--encode', dest='encode', action='store_true',
-                        help='encode file if True, otherwise decode file.')
+    enc = parser.add_mutually_exclusive_group(required=True)
+    enc.add_argument('--encode', dest='encode', action='store_true',
+                     help='encode file if True, otherwise decode file.')
+    enc.add_argument('--decode', dest='encode', action='store_false',
+                     help='encode file if True, otherwise decode file.')
     parser.add_argument('--sow', type=str, default='{',
                         help='start of word symbol')
     parser.add_argument('--eow', type=str, default='}',
@@ -59,12 +62,13 @@ def encode_token(fname, args):
         print(cur)
 
 
-def decode_token(fname, _):
+def decode_token(fname, args):
     info('reading lines')
     lines = [line for line in open(fname, 'r')]
     # split, discard the last token eos, and remove bow, eow.
+    a, b = len(args.sow), len(args.eow)
     for line in tqdm(lines):
-        cur = ' '.join([w[1:-1] for w in line.split()[:-1]])
+        cur = ' '.join([w.strip(args.pad)[a:-b] for w in line.split()[:-1]])
         print(cur)
 
 

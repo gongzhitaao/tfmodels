@@ -35,27 +35,56 @@ class WordCNN:
         self.x_embed = None
         self.logits = None
         self.build = True
+        self.normalized_embedding = None
 
-    def _add_inference_graph(self, x):
-        self.x_embed = z = tf.nn.embedding_lookup(self.embedding, x)
+    def _inference_from_embedding(self, z, training):
         v0 = tf.trainable_variables()
-        z = self.dropout(z, training=self.cfg.training)
+        z = self.dropout(z, training=training)
         z = self.conv1d(z)
         z = tf.maximum(z, 0.2 * z)
         z = tf.reduce_max(z, axis=1, name='global_max_pooling')
         shape = z.get_shape().as_list()[1:]
         z = tf.reshape(z, [-1, _prod(shape)])
         z = self.mlp(z)
-        z = self.dropout(z, training=self.cfg.training)
+        z = self.dropout(z, training=training)
         z = tf.maximum(z, 0.2 * z)
         self.logits = z = self.resize(z)
         v1 = tf.trainable_variables()
         self.varlist = [v for v in v1 if v not in v0]
         return z
 
-    def predict(self, x, reuse=True):
+    def predict(self, x, training=False):
+        self.x_embed = self.embed(x)
+        logits = self._inference_from_embedding(self.x_embed, training)
+        y = self.cfg.output(logits)
+        return y
+
+    def predict_from_embedding(self, x_embed, training=False):
         if not self.build:
             self._build()
-        logits = self._add_inference_graph(x)
-        y = self.cfg.prob_fn(logits)
+        self.x_embed = x_embed
+        logits = self._inference_from_embedding(self.x_embed, training)
+        y = self.cfg.output(logits)
         return y
+
+    def embed(self, x):
+        if not self.build:
+            self._build()
+        self.x_embed = tf.nn.embedding_lookup(self.embedding, x)
+        return self.x_embed
+
+    def reverse_embed(self, x_embed):
+        if not self.build:
+            self._build()
+        if self.normalized_embedding is None:
+            self.normalized_embedding = tf.nn.l2_normalize(self.embedding,
+                                                           axis=1)
+        # [B, L, V] = [B, L, D] x [D, V]
+        dist = tf.tensordot(tf.nn.l2_normalize(x_embed, axis=1),
+                            tf.transpose(self.normalized_embedding), axes=1)
+        # [B, L]
+        token_ids = tf.argmax(dist, axis=1)
+        return token_ids
+
+    def __call__(self, x, training=False):
+        return self.predict(x, training)

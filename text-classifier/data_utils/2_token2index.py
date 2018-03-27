@@ -15,8 +15,8 @@ info = logger.info
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Convert each character to its UTF-8 encoding with ord.')
-    parser.add_argument('--train', type=str, help='train.txt', required=True)
-    parser.add_argument('--test', type=str, help='test.txt', required=True)
+    parser.add_argument('--train', type=str, help='train.txt')
+    parser.add_argument('--test', type=str, help='test.txt')
     parser.add_argument('--validation', type=str, help='validation.txt')
     parser.add_argument('--w2v', type=str, required=True,
                         help='path to saved KeyedVector model')
@@ -42,16 +42,21 @@ def token2index(fname, w2v):
 
 
 def main(args):
-    info('load w2v')
+    info('loading w2v')
     w2v = KeyedVectors.load(os.path.expanduser(args.w2v))
-    info('generate training data')
-    X_train, y_train = token2index(os.path.expanduser(args.train), w2v)
-    info('generate test data')
-    X_test, y_test = token2index(os.path.expanduser(args.test), w2v)
-    data = {'X_train': X_train, 'y_train': y_train,
-            'X_test': X_test, 'y_test': y_test}
+    data = {}
+    if args.train is not None:
+        info('generate training data')
+        X_train, y_train = token2index(os.path.expanduser(args.train), w2v)
+        data['X_train'], data['y_train'] = X_train, y_train
+    if args.test is not None:
+        info('generate test data')
+        X_test, y_test = token2index(os.path.expanduser(args.test), w2v)
+        data['X_test'], data['y_test'] = X_test, y_test
     if args.validation is not None:
-        X_valid, y_valid = token2index(os.path.expanduser(args.validation))
+        info('generate validation data')
+        X_valid, y_valid = token2index(os.path.expanduser(args.validation),
+                                       w2v)
         data['X_valid'], data['y_valid'] = X_valid, y_valid
     info('saving {}'.format(args.output))
     np.savez(args.output, **data)
