@@ -4,29 +4,37 @@
 
 This repo contains text classification models.
 1. Word-level CNN model https://arxiv.org/abs/1408.5882
-2. Char-level CNN model adapted from https://arxiv.org/abs/1508.06615
+2. Character-level CNN+Highway+LSTM model adapted from
+   https://arxiv.org/abs/1508.06615
 
 * Dependencies
 
-- Python3.6
-- TensorFlow 1.6
+There are the package version I used when testing the functionalities.  Lower
+versions may or may not be working.
+
+- Python v3.6
+- TensorFlow 1.8
 - Numpy
 - tqdm, show progress bar in an unobtrusive way
-- nltk, tokenize strings.
+- NLTK, tokenize strings, including NLTK data.
 - bleach, remove HTML tags.
 
 * Date
 
 Sample data are stored in [[file:data/][data]] directory.  The preprocessing script is provided
-in [[file:data_utils/][data_utils]].  To use your own test classification set, please prepare your
-data set into the following format:
+in [[file:data_utils/]].  To use your own test classification set, please prepare
+your data set into the following format:
 1. Store training and test samples for each category in separate files.  Let's
    say your data set has 6 categories, then prepare your data set into
    =train-0.txt=, =train-1.txt=, ..., =train-5.txt=, =test-0.txt=, =test-1.txt=,
    ..., =test-5.txt=, where the number indicates the labels.
-2. Each sample reside in a line.
-3. Create a pipeline script following the examples in [[file:data_utils/][data_utils]], e.g.,
-   [[file:data_utils/prepare_imdb.bash]].
+2. Each sample per line.
+3. Create a pipeline script following the examples in [[file:data_utils/]], e.g.,
+   [[file:data_utils/fakenews_char.bash]] creates a dataset for the character-level
+   model.
 4. Run the pipeline script, it should generate an =.npz= file containing the
    training and test dataset.
-5. Create classifier model following the examples, e.g., [[file:charcnn_imdb.py]].
+5. Create a script to configure and run corresponding model, following the
+   examples in [[file:examples/]] directory, e.g.,
+   [[file:examples/charlstm_fakenews_sigm.bash]] trains the character-level model
+   with sigmoid output (another valid option is tanh output).
