@@ -1,2 +1,4 @@
 Makefile
 *.txt
+*.pyc
+__pycache__/
