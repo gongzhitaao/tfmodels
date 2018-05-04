@@ -1,4 +1,5 @@
 #!/bin/bash
+#!/bin/bash
 
 # Assume that the raw text files are stored in ${datapath}.  The train and test
 # data files for each class is named train-0.txt, train-1.txt, ...,
@@ -20,15 +21,15 @@ raw_file="${datapath}/%s-%d.txt"
 # already exists.
 token_file="${datapath}/tmp/%s-%d-tokens.txt"
 
-# The tokenized file is padded at character-level and store result in this file.
-charpad="${datapath}/tmp/%s-%d-charpad.txt"
+# The tokenized file is padded and store result in this file.
+wordpad="${datapath}/tmp/%s-%d-wordpad.txt"
 
 # The data samples of different classes are gathers together for train and test,
 # respectively.
-charall="${datapath}/tmp/%s-charall.txt"
+wordall="${datapath}/tmp/%s-wordall.txt"
 
 # Finally the data are converted to indices and stored in one npz file
-data="${datapath}/char-seqlen-%d-wordlen-%d.npz"
+data="${datapath}/word-seqlen-%d.npz"
 
 function tokenize {
     for i in train test; do
@@ -44,41 +45,41 @@ function tokenize {
     done
 }
 
-function charpad {
+function wordpad {
     for i in train test; do
         for j in ${labels}; do
             f0=$(printf ${token_file} ${i} ${j})
-            f1=$(printf ${charpad} ${i} ${j})
-            python -u 1_charpad.py \
-                   --seqlen ${seqlen} --wordlen ${wordlen} \
-                   --ascii --encode \
-                   --sow '{' --eow '}' --eos '+' --pad ' ' --unk '|' \
+            f1=$(printf ${wordpad} ${i} ${j})
+            python -u 1_wordpad.py \
+                   --seqlen ${seqlen} \
+                   --pad '<pad>' --eos '<eos>' --unk '<unk>' \
                    ${f0} > ${f1}
             echo "Wrote ${f1}"
         done
     done
 }
 
-function charmerge {
+function wordmerge {
     for i in train test; do
-        f1=$(printf ${charall} ${i})
+        f1=$(printf ${wordall} ${i})
         [ -f ${f1} ] && mv ${f1}{,.bak}
         for j in ${labels}; do
-            f0=$(printf ${charpad} ${i} ${j})
+            f0=$(printf ${wordpad} ${i} ${j})
             sed -e "s/^/${j} /" ${f0} >> ${f1}
         done
     done
 }
 
-function char2index {
-    python 2_char2index.py \
-           --train $(printf ${charall} "train") \
-           --test $(printf ${charall} "test") \
-           --output $(printf ${data} ${seqlen} ${wordlen})
+function word2index {
+    python 2_token2index.py \
+           --w2v ~/data/glove/glove.840B.300d.w2v \
+           --train $(printf ${wordall} "train") \
+           --test $(printf ${wordall} "test") \
+           --output $(printf ${data} ${seqlen})
 }
 
 mkdir -p ${datapath}/tmp
 tokenize
-charpad
-charmerge
-char2index
+wordpad
+wordmerge
+word2index
